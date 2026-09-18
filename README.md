@@ -1,10 +1,7 @@
-# Rural Health AI - LiveKit Web Tester
+# Rural Health AI - Medico
 
 Rural Health AI is a voice-first health assistance and triage prototype designed to provide educational health information and guide users toward appropriate professional care.
 
-This repository is **only the web tester frontend** for an already-deployed Python LiveKit Voice Agent backend.
-
----
 
 ## 🏗️ Architecture
 
