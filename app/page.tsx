@@ -1,23 +1,83 @@
-import { VoiceTester } from '@/components/VoiceTester';
+'use client';
+
+import React, { useState } from 'react';
+import { Navbar } from '@/components/navbar';
+import { Hero } from '@/components/hero';
+import { ConsultationSection } from '@/components/consultation/consultation-section';
+import { HowItWorks } from '@/components/how-it-works';
+import { Architecture } from '@/components/architecture';
+import { Safety } from '@/components/safety';
+import { Languages } from '@/components/languages';
+import { Accessibility } from '@/components/accessibility';
+import { Impact } from '@/components/impact';
+import { DemoGuideModal } from '@/components/demo-guide-modal';
+import { Footer } from '@/components/footer';
 
 export default function Home() {
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
+
+  const scrollToConsultation = () => {
+    const element = document.getElementById('consultation');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const scrollToHowItWorks = () => {
+    const element = document.getElementById('how-it-works');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between py-8">
-      <header className="w-full max-w-4xl mx-auto px-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></div>
-          <span className="text-sm font-semibold text-slate-300 tracking-wide">LiveKit Voice AI Prototype</span>
-        </div>
-        <span className="text-xs text-slate-500 font-mono">MOSS RAG Enabled</span>
-      </header>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-slate-950">
+      {/* Sticky Navigation */}
+      <Navbar
+        onOpenDemoGuide={() => setDemoModalOpen(true)}
+        onStartConsultation={scrollToConsultation}
+      />
 
-      <section className="my-auto py-6">
-        <VoiceTester />
-      </section>
+      {/* Main Content Sections */}
+      <main className="flex-1">
+        {/* 1. Hero Section */}
+        <Hero
+          onStartConsultation={scrollToConsultation}
+          onExploreHowItWorks={scrollToHowItWorks}
+          onOpenDemoGuide={() => setDemoModalOpen(true)}
+        />
 
-      <footer className="w-full max-w-4xl mx-auto px-4 text-center text-xs text-slate-600">
-        Rural Health Voice Assistant • Built with LiveKit, OpenAI & MOSS Semantic Search
-      </footer>
-    </main>
+        {/* 2. Live Consultation Centerpiece Section */}
+        <ConsultationSection />
+
+        {/* 3. How Medico Works */}
+        <HowItWorks />
+
+        {/* 4. Inside Medico AI Architecture */}
+        <Architecture />
+
+        {/* 5. Clinical Safety Position */}
+        <Safety />
+
+        {/* 6. Multilingual Voice Support */}
+        <Languages />
+
+        {/* 7. Designed for Accessibility */}
+        <Accessibility />
+
+        {/* 8. Impact & Mission Statement */}
+        <Impact />
+      </main>
+
+      {/* Footer */}
+      <Footer />
+
+      {/* 2-Minute Judge Demo Guide Modal */}
+      <DemoGuideModal
+        isOpen={demoModalOpen}
+        onClose={() => setDemoModalOpen(false)}
+        onStartConsultation={scrollToConsultation}
+      />
+    </div>
   );
 }
