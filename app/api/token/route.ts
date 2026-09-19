@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { AccessToken } from 'livekit-server-sdk';
+import { AccessToken, RoomConfiguration, RoomAgentDispatch } from 'livekit-server-sdk';
 
 export async function POST(req: Request) {
   try {
@@ -26,6 +26,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const roomName = body.roomName || `medico-session-${Math.random().toString(36).substring(2, 9)}`;
     const participantIdentity = body.participantName || `user-${Math.random().toString(36).substring(2, 9)}`;
+    const agentName = body.agentName || 'my-agent';
 
     const at = new AccessToken(apiKey, apiSecret, {
       identity: participantIdentity,
@@ -41,17 +42,27 @@ export async function POST(req: Request) {
       canPublishData: true,
     });
 
-    at.roomPreset = 'my-agent';
+    // Configure Agent Dispatch for LiveKit Cloud using RoomConfiguration
+    at.roomConfig = new RoomConfiguration({
+      agents: [
+        new RoomAgentDispatch({
+          agentName: agentName,
+        }),
+      ],
+    });
 
     const token = await at.toJwt();
 
-    console.log(`[LiveKit Token API] Token generated for room: ${roomName}, participant: ${participantIdentity}`);
+    console.log(`[LiveKit Token API] Token generated for room: ${roomName}, participant: ${participantIdentity}, agent: ${agentName}`);
 
     return NextResponse.json({
       token,
+      participant_token: token,
       url: livekitUrl,
+      server_url: livekitUrl,
       roomName,
       identity: participantIdentity,
+      agentName,
     });
   } catch (error) {
     console.error('[LiveKit Token API] Error generating access token:', error);
@@ -61,3 +72,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

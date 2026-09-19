@@ -15,44 +15,53 @@ export const ConsultationSection: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Start Voice Consultation: Fetches token from POST /api/token
+  // Start Voice Consultation: Fetches token from POST /api/token
   const startConsultation = useCallback(async () => {
     setIsConnecting(true);
     setErrorMessage(null);
 
     try {
-      // Request mic permission first
+      console.log('[LiveKit Stage] 1/4 Requesting microphone permission...');
       try {
-        await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
       } catch (micErr) {
-        console.error('Microphone permission error:', micErr);
+        console.error('[LiveKit Stage] Microphone permission error:', micErr);
         setErrorMessage(
-          'Microphone access is required for voice consultation. Please allow microphone access in your browser and try again.'
+          '[MICROPHONE_PERMISSION_ERROR] Microphone access is required for voice consultation. Please allow microphone access in your browser and try again.'
         );
         setIsConnecting(false);
         return;
       }
 
+      console.log('[LiveKit Stage] 2/4 Fetching token from /api/token...');
       const res = await fetch('/api/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ agentName: 'my-agent' }),
       });
+
+      console.log(`[LiveKit Stage] 2/4 Token response status: ${res.status}`);
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Unable to start consultation session.');
+        throw new Error(`[TOKEN_ENDPOINT_ERROR] ${errorData.message || `Token request failed with status ${res.status}.`}`);
       }
 
       const data = await res.json();
-      if (!data.token || !data.url) {
-        throw new Error('Invalid token response from server.');
+      const sessionToken = data.token || data.participant_token;
+      const sessionUrl = data.url || data.server_url;
+
+      if (!sessionToken || !sessionUrl) {
+        throw new Error('[TOKEN_ENDPOINT_ERROR] Server returned incomplete connection details (missing token or URL).');
       }
 
-      setToken(data.token);
-      setLivekitUrl(data.url);
+      console.log('[LiveKit Stage] 3/4 Token obtained. Initializing LiveKit room connection...');
+      setToken(sessionToken);
+      setLivekitUrl(sessionUrl);
     } catch (err: unknown) {
-      console.error('Connection error:', err);
-      const msg = err instanceof Error ? err.message : 'Unable to connect to the AI agent. Please try again.';
+      console.error('[LiveKit Stage] Connection error:', err);
+      const msg = err instanceof Error ? err.message : '[NETWORK_ERROR] Unable to connect to the AI agent. Please try again.';
       setErrorMessage(msg);
     } finally {
       setIsConnecting(false);
@@ -61,6 +70,7 @@ export const ConsultationSection: React.FC = () => {
 
   // End Session / Disconnect
   const handleDisconnectSession = useCallback(() => {
+    console.log('[LiveKit Stage] Disconnected session reset.');
     setToken(null);
     setLivekitUrl(null);
     setIsConnecting(false);
@@ -119,10 +129,16 @@ export const ConsultationSection: React.FC = () => {
             connect={true}
             audio={true}
             video={false}
-            onDisconnected={handleDisconnectSession}
+            onConnected={() => {
+              console.log('[LiveKit Stage] 4/4 Successfully connected to LiveKit room. Waiting for agent dispatch...');
+            }}
+            onDisconnected={() => {
+              console.log('[LiveKit Stage] LiveKit room disconnected.');
+              handleDisconnectSession();
+            }}
             onError={(err) => {
-              console.error('LiveKitRoom error:', err);
-              setErrorMessage('LiveKit connection error. Please try again.');
+              console.error('[LiveKit Stage] LiveKitRoom error:', err);
+              setErrorMessage(`[LIVEKIT_CONNECTION_ERROR] ${err.message || 'LiveKit voice connection error. Please try again.'}`);
               handleDisconnectSession();
             }}
             className="w-full"
